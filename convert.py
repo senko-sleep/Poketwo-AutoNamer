@@ -3,8 +3,8 @@ import torch
 import torch.nn as nn
 import os
 
-MODEL_PATH = "model/pokemon_cnn.pt"
-ONNX_PATH = "model/pokemon_cnn.onnx"
+MODEL_PATH = "model/pokemon_cnn_v2.pt"
+ONNX_PATH = "model/pokemon_cnn_v2.onnx"
 
 # Match your CNN model structure
 class CNN(nn.Module):

@@ -4,11 +4,12 @@ import requests
 from PIL import Image
 import io
 import os
+import json  # for reading labels from JSON
 
-SUBMODULE_PATH = os.path.dirname(os.path.realpath(__file__))  
+SUBMODULE_PATH = os.path.dirname(os.path.realpath(__file__))
 
-ONNX_PATH = os.path.join(SUBMODULE_PATH, "model/pokemon_cnn.onnx")
-LABELS_PATH = os.path.join(SUBMODULE_PATH, "model/labels.txt")
+ONNX_PATH = os.path.join(SUBMODULE_PATH, "model/pokemon_cnn_v2.onnx")
+LABELS_PATH = os.path.join(SUBMODULE_PATH, "model/labels_v2.json")
 SAVE_PATH = os.path.join(SUBMODULE_PATH, "data/commands/pokemon/images")
 
 class Prediction:
@@ -22,7 +23,7 @@ class Prediction:
     def generate_labels_file_from_save_path(self):
         if not os.path.exists(self.save_path):
             raise FileNotFoundError(f"SAVE_PATH does not exist: {self.save_path}")
-        
+
         class_names = sorted([
             d for d in os.listdir(self.save_path)
             if os.path.isdir(os.path.join(self.save_path, d))
@@ -30,7 +31,7 @@ class Prediction:
 
         os.makedirs(os.path.dirname(self.labels_path), exist_ok=True)
         with open(self.labels_path, "w", encoding="utf-8") as f:
-            f.write("\n".join(class_names))
+            json.dump(class_names, f, indent=2)
 
         return class_names
 
@@ -39,7 +40,16 @@ class Prediction:
             return self.generate_labels_file_from_save_path()
 
         with open(self.labels_path, "r", encoding="utf-8") as f:
-            return [line.strip() for line in f if line.strip()]
+            try:
+                data = json.load(f)
+                if isinstance(data, dict):
+                    return [data[k] for k in sorted(data, key=lambda x: int(x))]
+                elif isinstance(data, list):
+                    return data
+                else:
+                    raise ValueError("labels_v2.json must be a list or dict")
+            except json.JSONDecodeError:
+                raise ValueError(f"Invalid JSON format in {self.labels_path}")
 
     def preprocess_image_from_url(self, url):
         try:
